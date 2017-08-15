@@ -145,9 +145,9 @@ var VirtualScrollComponent = (function () {
         var items = this.items || [];
         var offsetTop = this.getElementsOffset();
         this.scrollHeight = d.childHeight * d.itemCount / d.itemsPerRow;
-        if (el.scrollTop > this.scrollHeight) {
-            el.scrollTop = this.scrollHeight + offsetTop;
-        }
+        // if (el.scrollTop > this.scrollHeight) {
+        //   el.scrollTop = this.scrollHeight + offsetTop;
+        // }
         var scrollTop = Math.max(0, el.scrollTop - offsetTop);
         var indexByScrollTop = scrollTop / this.scrollHeight * d.itemCount / d.itemsPerRow;
         var end = Math.min(d.itemCount, Math.ceil(indexByScrollTop) * d.itemsPerRow + d.itemsPerRow * (d.itemsPerCol + 1));
