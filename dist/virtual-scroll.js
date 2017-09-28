@@ -1,12 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = require("@angular/core");
+var tween = require("@tweenjs/tween.js");
 var VirtualScrollComponent = (function () {
     function VirtualScrollComponent(element) {
         var _this = this;
         this.element = element;
         this.items = [];
         this.bufferAmount = 0;
+        this.scrollAnimationTime = 1500;
         this.refreshHandler = function () {
             _this.refresh();
         };
@@ -56,15 +58,31 @@ var VirtualScrollComponent = (function () {
         requestAnimationFrame(function () { return _this.calculateItems(); });
     };
     VirtualScrollComponent.prototype.scrollInto = function (item) {
+        var _this = this;
         var el = this.parentScroll instanceof Window ? document.body : this.parentScroll || this.element.nativeElement;
         var offsetTop = this.getElementsOffset();
         var index = (this.items || []).indexOf(item);
         if (index < 0 || index >= (this.items || []).length)
             return;
         var d = this.calculateDimensions();
-        el.scrollTop = (Math.floor(index / d.itemsPerRow) * d.childHeight)
+        var scrollTop = (Math.floor(index / d.itemsPerRow) * d.childHeight)
             - (d.childHeight * Math.min(index, this.bufferAmount));
-        this.refresh();
+        if (this.currentTween != undefined)
+            this.currentTween.stop();
+        this.currentTween = new tween.Tween({ scrollTop: el.scrollTop })
+            .to({ scrollTop: scrollTop }, this.scrollAnimationTime)
+            .easing(tween.Easing.Quadratic.Out)
+            .onUpdate(function (data) {
+            el.scrollTop = data.scrollTop;
+            _this.refresh();
+        })
+            .start();
+        var animate = function (time) {
+            _this.currentTween.update(time);
+            if (_this.currentTween._object.scrollTop !== scrollTop)
+                window.requestAnimationFrame(animate);
+        };
+        animate();
     };
     VirtualScrollComponent.prototype.addParentEventHandlers = function (parentScroll) {
         if (parentScroll) {
@@ -125,7 +143,10 @@ var VirtualScrollComponent = (function () {
         var itemsPerRow = Math.max(1, this.countItemsPerRow());
         var itemsPerRowByCalc = Math.max(1, Math.floor(viewWidth / childWidth));
         var itemsPerCol = Math.max(1, Math.floor(viewHeight / childHeight));
-        var scrollTop = Math.max(0, el.scrollTop);
+        var elScrollTop = this.parentScroll instanceof Window
+            ? (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0)
+            : el.scrollTop;
+        var scrollTop = Math.max(0, elScrollTop);
         if (itemsPerCol === 1 && Math.floor(scrollTop / this.scrollHeight * itemCount) + itemsPerRowByCalc >= itemCount) {
             itemsPerRow = itemsPerRowByCalc;
         }
@@ -145,11 +166,14 @@ var VirtualScrollComponent = (function () {
         var d = this.calculateDimensions();
         var items = this.items || [];
         var offsetTop = this.getElementsOffset();
+        var elScrollTop = this.parentScroll instanceof Window
+            ? (window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0)
+            : el.scrollTop;
         this.scrollHeight = d.childHeight * d.itemCount / d.itemsPerRow;
-        // if (el.scrollTop > this.scrollHeight) {
-        //   el.scrollTop = this.scrollHeight + offsetTop;
+        // if (elScrollTop > this.scrollHeight) {
+        //     elScrollTop = this.scrollHeight + offsetTop;
         // }
-        var scrollTop = Math.max(0, el.scrollTop - offsetTop);
+        var scrollTop = Math.max(0, elScrollTop - offsetTop);
         var indexByScrollTop = scrollTop / this.scrollHeight * d.itemCount / d.itemsPerRow;
         var end = Math.min(d.itemCount, Math.ceil(indexByScrollTop) * d.itemsPerRow + d.itemsPerRow * (d.itemsPerCol + 1));
         var maxStartEnd = end;
@@ -215,6 +239,7 @@ var VirtualScrollComponent = (function () {
         'childWidth': [{ type: core_1.Input },],
         'childHeight': [{ type: core_1.Input },],
         'bufferAmount': [{ type: core_1.Input },],
+        'scrollAnimationTime': [{ type: core_1.Input },],
         'parentScroll': [{ type: core_1.Input },],
         'update': [{ type: core_1.Output },],
         'change': [{ type: core_1.Output },],
