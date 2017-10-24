@@ -192,7 +192,7 @@ If inside of content of virtual scroll element you want to show also additional 
     (update)="viewPortItems = $event">
     <input type="search">
     <div #container>
-        <list-item *ngFor="let item of scroll.viewPortItems" [item]="item">
+        <list-item *ngFor="let item of viewPortItems" [item]="item">
         </list-item>
     </div>
 </virtual-scroll>
